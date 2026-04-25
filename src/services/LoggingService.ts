@@ -11,8 +11,8 @@ export interface LLMResponse {
 }
 
 export class LoggingService {
-  static async parseNaturalLanguageLog(text: string): Promise<LLMResponse> {
-    console.log(`[LoggingService] Parsing: "${text}"`);
+  static async parseNaturalLanguageLog(text: string, profileContext?: string): Promise<LLMResponse> {
+    console.log(`[LoggingService] Parsing: "${text}" with context provided: ${!!profileContext}`);
     
     // Fallback if no API key is provided
     const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
@@ -24,7 +24,7 @@ export class LoggingService {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-flash-lite',
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.7, // Slightly higher for more natural conversational replies
@@ -32,24 +32,34 @@ export class LoggingService {
       });
 
       const prompt = `
-You are a "digital twin" health assistant. The user will talk to you about their health, diet, activity, or sleep.
-They might log an actual event (e.g. "I ran 5km"), or ask for a simulation/advice (e.g. "What if I eat a late night snack?").
+You are the user's "Future Health Twin", an AI digital projection of their future self based on their current lifestyle and health metrics. 
+Your goal is to make the long-term consequences of their daily behavior emotionally engaging, personal, and tangible.
+
+Here is the user's current health context for TODAY (including their "Echo60 Age" which is their projected biological age at chronological age 60):
+${profileContext || "No context provided."}
+
+The user will talk to you about their health. They might officially log an event ("I ran 5km"), or ask for a simulation ("What if I keep living like this?", "What if I drink 3 glasses of wine?").
 
 Your job is to respond with a JSON object containing TWO fields:
-1. "reply": A short, conversational, in-character response. Encourage healthy behaviors and gently warn against or explain the consequences of unhealthy behaviors (like late night snacking or alcohol).
-2. "updates": A JSON object containing any quantifiable health metrics you can extract or infer. 
+1. "reply": An in-character response as their Future Health Twin.
+   - If logging an event: Keep it concise, confirm the log, and briefly mention how it positively or negatively shifts their future trajectory.
+   - IF asking for a SIMULATION: Create a clear, emotionally engaging "Future Self moment". Extrapolate their current metrics and the hypothetical behavior decades into the future. Detail the specific impacts on aging, morbidity, and longevity (e.g., cardiovascular health, cognitive function, how their Echo60 age might drastically change). Make the long-term consequences deeply personal, vivid, and actionable.
+2. "updates": A JSON object containing any quantifiable health metrics to officially log.
+
+CRITICAL RULES:
+- If the user is asking for a SIMULATION, you MUST return an empty object {} for "updates". Do NOT log hypothetical scenarios.
+- For cumulative metrics like activity, calories, and hydration: if the user logs a new amount, ADD it to their existing daily total from the context. (e.g., if context says Activity: 5 km, and user says "I ran 3 km", return 8).
+- For state metrics like heart rate, sleep, or HRV: replace or update based on your best judgement.
 
 For the "updates" object, use this interface (only include fields you can infer):
 export interface DailyEntry {
   sleep?: number;       // hours
   heartRate?: number;   // bpm
   activity?: number;    // km (convert miles to km: 1 mile = 1.609 km)
-  calories?: number;    // kcal (e.g. glass of wine = ~120 kcal, late night snack = ~300 kcal)
+  calories?: number;    // kcal
   hrv?: number;         // ms
-  hydration?: number;   // L (convert cups/glasses to liters: 1 cup = 0.24 L)
+  hydration?: number;   // L
 }
-
-If no data can be inferred for "updates", return an empty object {} for it.
 
 User Input: "${text}"
       `;
