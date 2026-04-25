@@ -71,17 +71,43 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
     // Add user message to UI
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userText }]);
     
+    // Create context string
+    const todayDate = new Date().toISOString().split('T')[0];
+    
+    // Find today's entry, or create a fresh one
+    let baseEntry = profile?.data.find(d => d.date === todayDate);
+    if (!baseEntry) {
+      // If today doesn't exist, we start fresh but we can optionally 
+      // pull baseline averages. For now, a clean slate for today.
+      baseEntry = {
+        date: todayDate, 
+        sleep: undefined, 
+        heartRate: undefined, 
+        activity: 0, 
+        calories: 0, 
+        hrv: undefined, 
+        hydration: 0
+      };
+    }
+    
+    const profileContext = profile ? `
+Name: ${profile.name}
+Biological Age: ${profile.age}
+Echo60 Age (Predicted Age at 60): ${profile.bioAge}
+Recent Metrics (Latest Day):
+- Sleep: ${baseEntry.sleep || '--'} hours
+- Heart Rate: ${baseEntry.heartRate || '--'} bpm
+- Activity: ${baseEntry.activity || '0'} km
+- HRV: ${baseEntry.hrv || '--'} ms
+- Calories: ${baseEntry.calories || '0'} kcal
+- Hydration: ${baseEntry.hydration || '0'} L
+` : undefined;
+    
     // Process input text using LLM Stub
-    const response = await LoggingService.parseNaturalLanguageLog(userText);
+    const response = await LoggingService.parseNaturalLanguageLog(userText, profileContext);
     const updates = response.updates;
     
     if (updates && Object.keys(updates).length > 0) {
-      // Find today's date or the last log date to append to
-      const todayDate = new Date().toISOString().split('T')[0];
-      const baseEntry = profile?.data.find(d => d.date === todayDate) || profile?.data[profile.data.length - 1] || {
-        date: todayDate, sleep: 7, heartRate: 65, activity: 5, calories: 2000, hrv: 50, hydration: 2
-      };
-      
       await addDailyLog({ ...baseEntry, ...updates, date: todayDate });
     }
     
