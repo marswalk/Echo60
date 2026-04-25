@@ -7,11 +7,7 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sixel.echo60",
-      "infoPlist": {
-        "NSHealthShareUsageDescription": "Echo60 needs access to your health data to calculate your biological age and trajectories.",
-        "NSHealthUpdateUsageDescription": "Echo60 needs access to your health data to provide accurate insights."
-      }
+      "bundleIdentifier": "com.sixel.echo60"
     },
     "android": {
       "package": "com.sixel.echo60"
@@ -22,7 +18,7 @@
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "14.0"
+            "deploymentTarget": "15.1"
           }
         }
       ]

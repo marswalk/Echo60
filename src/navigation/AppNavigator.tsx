@@ -4,8 +4,7 @@ import EchoTab from '../screens/EchoTab';
 import MetricsTab from '../screens/MetricsTab';
 import FutureLabTab from '../screens/FutureLabTab';
 import ProfileTab from '../screens/ProfileTab';
-import { Text, View, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Text, View } from 'react-native';
 
 export type RootTabParamList = {
   Echo: undefined;

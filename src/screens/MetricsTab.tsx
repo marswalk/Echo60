@@ -2,32 +2,42 @@ import React from 'react';
 import { View, Text, SafeAreaView, ScrollView } from 'react-native';
 import BackgroundGradient from '../components/BackgroundGradient';
 
+type InlineBadgeProps = {
+  emoji: string;
+  label: string;
+  accentClassName: string;
+};
+
+function InlineBadge({ emoji, label, accentClassName }: InlineBadgeProps) {
+  return (
+    <View className="bg-[#1C1C1E] border border-white/5 rounded-full px-3 py-1 flex-row items-center mx-1 my-1">
+      <Text className="text-sm mr-1">{emoji}</Text>
+      <Text className={accentClassName}>{label}</Text>
+    </View>
+  );
+}
+
 export default function MetricsTab() {
   return (
     <View className="flex-1">
       <BackgroundGradient>
         <SafeAreaView className="flex-1">
           <ScrollView className="px-5 pt-8" contentContainerStyle={{ paddingBottom: 120 }}>
-            
-            {/* Inline Badges Summary Paragraph */}
-            <View className="mb-10">
-              <Text className="text-white text-base font-light leading-9">
-                Your{' '}
-                <View className="bg-[#1C1C1E] border border-white/5 rounded-full px-3 py-1 flex-row items-center translate-y-2">
-                  <Text className="text-sm mr-1">😴</Text>
-                  <Text className="text-[#00FFFF] text-sm font-medium">sleep 7.2h</Text>
-                </View>
-                {' '}consistency has been excellent this week, lowering cortisol. However, your{' '}
-                <View className="bg-[#1C1C1E] border border-white/5 rounded-full px-3 py-1 flex-row items-center translate-y-2">
-                  <Text className="text-sm mr-1">🏃</Text>
-                  <Text className="text-[#EAB308] text-sm font-medium">activity 4.2km</Text>
-                </View>
-                {' '}has dipped—add 15 mins of walking today. Your{' '}
-                <View className="bg-[#1C1C1E] border border-white/5 rounded-full px-3 py-1 flex-row items-center translate-y-2">
-                  <Text className="text-sm mr-1">❤️</Text>
-                  <Text className="text-[#22C55E] text-sm font-medium">heart rate 68bpm</Text>
-                </View>
-                {' '}remains steady.
+            <View className="mb-10 flex-row flex-wrap items-center">
+              <Text className="text-white text-base font-light leading-8">
+                Your
+              </Text>
+              <InlineBadge emoji="😴" label="sleep 7.2h" accentClassName="text-[#00FFFF] text-sm font-medium" />
+              <Text className="text-white text-base font-light leading-8">
+                consistency has been excellent this week, lowering cortisol. However, your
+              </Text>
+              <InlineBadge emoji="🏃" label="activity 4.2km" accentClassName="text-[#EAB308] text-sm font-medium" />
+              <Text className="text-white text-base font-light leading-8">
+                has dipped—add 15 mins of walking today. Your
+              </Text>
+              <InlineBadge emoji="❤️" label="heart rate 68bpm" accentClassName="text-[#22C55E] text-sm font-medium" />
+              <Text className="text-white text-base font-light leading-8">
+                remains steady.
               </Text>
             </View>
 
