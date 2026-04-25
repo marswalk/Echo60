@@ -12,13 +12,19 @@ const orbHtml = `
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
-    body, html {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
       background: transparent;
-      overflow: hidden;
+      -webkit-background-clip: content-box;
     }
     .orb-wrap {
       display: flex;
@@ -30,91 +36,98 @@ const orbHtml = `
     }
     .sphere {
       position: relative;
-      border-radius: 50%;
       width: 200px;
       height: 200px;
-      background: rgba(0,0,0,0.15);
-      backdrop-filter: blur(5px);
-      box-shadow: 0 0 50px 5px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,255,255,0.5), inset 0 -20px 50px rgba(0,0,0,0.2);
-      overflow: hidden;
-      animation: float 6s ease-in-out infinite;
-      flex-shrink: 0;
-    }
-    .sphere::before {
-      content: '';
-      position: absolute;
-      top: 45%; left: 47%;
-      transform: translate(-50%, -50%);
-      width: 10px; height: 30px;
-      background: rgba(255,255,255,1);
-      border-radius: 3px;
-      box-shadow: 30px 0 0 rgba(255,255,255,1);
-      z-index: 60;
-      animation: blink 4s infinite, lookAround 10s infinite ease-in-out;
-    }
-    .sphere::after {
-      content: '';
-      position: absolute;
-      inset: 0;
       border-radius: 50%;
-      animation: glowPulse 2s ease-in-out infinite;
+      -webkit-mask-image: -webkit-radial-gradient(circle, white 100%, black 100%);
+      mask-image: radial-gradient(circle, white 100%, black 100%);
+      box-shadow:
+        0 0 50px 5px rgba(0, 0, 0, 0.5),
+        inset 0 0 40px rgba(255, 255, 255, 0.5),
+        inset 0 -20px 50px rgba(0, 0, 0, 0.2);
+      animation: float 6s ease-in-out infinite;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      will-change: transform;
     }
     .lava {
       position: absolute;
-      inset: 5px;
+      inset: 0;
       border-radius: 50%;
       filter: blur(25px);
-      animation: colorShift 20s infinite linear;
+      -webkit-filter: blur(25px);
       mix-blend-mode: screen;
+      animation: colorShift 20s infinite linear;
     }
     .lava::before {
       content: '';
       position: absolute;
-      width: 120%; height: 120%;
-      background: radial-gradient(circle at 30% 30%, #0066ff 0%, transparent 45%),
-                  radial-gradient(circle at 70% 30%, #ff00cc 0%, transparent 45%),
-                  radial-gradient(circle at 50% 60%, #00ff99 0%, transparent 45%),
-                  radial-gradient(circle at 80% 40%, #ff3300 0%, transparent 45%);
+      width: 120%;
+      height: 120%;
+      top: -10%;
+      left: -10%;
+      background:
+        radial-gradient(circle at 30% 30%, #0066ff 0%, transparent 45%),
+        radial-gradient(circle at 70% 30%, #ff00cc 0%, transparent 45%),
+        radial-gradient(circle at 50% 60%, #00ff99 0%, transparent 45%),
+        radial-gradient(circle at 80% 40%, #ff3300 0%, transparent 45%);
       filter: blur(8px);
+      -webkit-filter: blur(8px);
       mix-blend-mode: screen;
     }
     .lava::after {
       content: '';
       position: absolute;
-      width: 120%; height: 120%;
-      background: radial-gradient(circle at 40% 40%, #0066ff 0%, transparent 35%),
-                  radial-gradient(circle at 60% 40%, #ff00cc 0%, transparent 35%),
-                  radial-gradient(circle at 50% 70%, #00ff99 0%, transparent 35%),
-                  radial-gradient(circle at 70% 50%, #ff3300 0%, transparent 35%);
+      width: 120%;
+      height: 120%;
+      top: -10%;
+      left: -10%;
+      background:
+        radial-gradient(circle at 40% 40%, #0066ff 0%, transparent 35%),
+        radial-gradient(circle at 60% 40%, #ff00cc 0%, transparent 35%),
+        radial-gradient(circle at 50% 70%, #00ff99 0%, transparent 35%),
+        radial-gradient(circle at 70% 50%, #ff3300 0%, transparent 35%);
       filter: blur(12px);
+      -webkit-filter: blur(12px);
       mix-blend-mode: screen;
       animation: pulse 4s ease-in-out infinite alternate;
     }
+    .eyes {
+      position: absolute;
+      top: 45%;
+      left: 47%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 30px;
+      background: rgba(255, 255, 255, 1);
+      border-radius: 3px;
+      box-shadow: 30px 0 0 rgba(255, 255, 255, 1);
+      z-index: 60;
+      animation:
+        blink 4s infinite,
+        lookAround 10s infinite ease-in-out;
+    }
     @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+      0%, 100% { transform: translateY(0) translateZ(0); }
+      50%       { transform: translateY(-10px) translateZ(0); }
     }
     @keyframes blink {
       0%, 96% { height: 30px; }
-      98% { height: 3px; }
-      100% { height: 30px; }
+      98%      { height: 3px; }
+      100%     { height: 30px; }
     }
     @keyframes lookAround {
-      0%, 40% { left: 47%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
-      45%, 55% { left: 40%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
-      60%, 70% { left: 54%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
+      0%, 40%   { left: 47%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
+      45%, 55%  { left: 40%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
+      60%, 70%  { left: 54%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
       75%, 100% { left: 47%; box-shadow: 30px 0 0 rgba(255,255,255,1); }
     }
     @keyframes colorShift {
-      0% { filter: blur(25px) hue-rotate(0deg); }
-      100% { filter: blur(25px) hue-rotate(360deg); }
-    }
-    @keyframes glowPulse {
-      0%, 100% { box-shadow: 0 0 60px rgba(255,255,255,0.1); }
-      50% { box-shadow: 0 0 85px rgba(255,255,255,0.2); }
+      0%   { filter: blur(25px) hue-rotate(0deg);   -webkit-filter: blur(25px) hue-rotate(0deg); }
+      100% { filter: blur(25px) hue-rotate(360deg); -webkit-filter: blur(25px) hue-rotate(360deg); }
     }
     @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.9; }
+      0%   { transform: scale(1);    opacity: 0.9; }
       100% { transform: scale(1.15); opacity: 1; }
     }
   </style>
@@ -123,6 +136,7 @@ const orbHtml = `
   <div class="orb-wrap">
     <div class="sphere">
       <div class="lava"></div>
+      <div class="eyes"></div>
     </div>
   </div>
 </body>
