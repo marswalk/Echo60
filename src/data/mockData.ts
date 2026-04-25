@@ -29,7 +29,7 @@ function clamp(val: number, min: number, max: number) {
 
 function round1(val: number) { return Math.round(val * 10) / 10; }
 
-function generateDays(days: number, config: {
+export function generateDays(days: number, config: {
   sleep:     [number, number]; // [base, variation]
   heartRate: [number, number];
   activity:  [number, number];
@@ -73,38 +73,6 @@ export const MOCK_PROFILES: MockProfile[] = [
       calories:  [2900, 280],
       hrv:       [88,  18],
       hydration: [3.1, 0.5],
-    }),
-  },
-  {
-    id: 'sarah',
-    name: 'Sarah Miller',
-    age: 45,
-    bioAge: 52,
-    emoji: '💼',
-    tagline: 'Stressed Professional · High Cortisol',
-    data: generateDays(90, {
-      sleep:     [5.9, 1.1],
-      heartRate: [81,  12],
-      activity:  [1.8, 1.0],
-      calories:  [2050, 320],
-      hrv:       [36,  10],
-      hydration: [1.4, 0.4],
-    }),
-  },
-  {
-    id: 'marcus',
-    name: 'Marcus Johnson',
-    age: 58,
-    bioAge: 55,
-    emoji: '🧘',
-    tagline: 'Balanced Senior · Mindful Lifestyle',
-    data: generateDays(90, {
-      sleep:     [7.1, 0.7],
-      heartRate: [67,  9],
-      activity:  [4.3, 1.8],
-      calories:  [2180, 200],
-      hrv:       [54,  14],
-      hydration: [1.9, 0.4],
     }),
   },
 ];
