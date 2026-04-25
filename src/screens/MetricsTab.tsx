@@ -1,128 +1,109 @@
 import React from 'react';
-import { View, Text, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import BackgroundGradient from '../components/BackgroundGradient';
+import { useProfile } from '../context/ProfileContext';
+import { METRIC_META, MetricKey } from '../data/mockData';
 
-type InlineBadgeProps = {
-  emoji: string;
-  label: string;
-  accentClassName: string;
-};
+const METRICS: MetricKey[] = ['sleep', 'heartRate', 'activity', 'calories', 'hrv', 'hydration'];
 
-function InlineBadge({ emoji, label, accentClassName }: InlineBadgeProps) {
+export default function MetricsTab({ navigation }: { navigation: any }) {
+  const { profile } = useProfile();
+  const latest = profile.data[profile.data.length - 1];
+  const prev   = profile.data[profile.data.length - 8]; // 7 days ago
+
+  const delta = (key: MetricKey) => {
+    if (!prev) return null;
+    const d = ((latest[key] as number) - (prev[key] as number)) / (prev[key] as number) * 100;
+    return d.toFixed(1);
+  };
+
   return (
-    <View className="bg-[#1C1C1E] border border-white/5 rounded-full px-3 py-1 flex-row items-center mx-1 my-1">
-      <Text className="text-sm mr-1">{emoji}</Text>
-      <Text className={accentClassName}>{label}</Text>
-    </View>
-  );
-}
-
-export default function MetricsTab() {
-  return (
-    <View className="flex-1">
+    <View style={{ flex: 1 }}>
       <BackgroundGradient>
-        <SafeAreaView className="flex-1">
-          <ScrollView className="px-5 pt-8" contentContainerStyle={{ paddingBottom: 120 }}>
-            <View className="mb-10 flex-row flex-wrap items-center">
-              <Text className="text-white text-base font-light leading-8">
-                Your
-              </Text>
-              <InlineBadge emoji="😴" label="sleep 7.2h" accentClassName="text-[#00FFFF] text-sm font-medium" />
-              <Text className="text-white text-base font-light leading-8">
-                consistency has been excellent this week, lowering cortisol. However, your
-              </Text>
-              <InlineBadge emoji="🏃" label="activity 4.2km" accentClassName="text-[#EAB308] text-sm font-medium" />
-              <Text className="text-white text-base font-light leading-8">
-                has dipped—add 15 mins of walking today. Your
-              </Text>
-              <InlineBadge emoji="❤️" label="heart rate 68bpm" accentClassName="text-[#22C55E] text-sm font-medium" />
-              <Text className="text-white text-base font-light leading-8">
-                remains steady.
+        <SafeAreaView style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+
+            {/* Header */}
+            <Text style={{ fontSize: 11, color: '#A0B0BA', fontWeight: '600', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4, marginTop: 16 }}>
+              {profile.emoji} {profile.name}
+            </Text>
+            <Text style={{ fontSize: 26, color: '#FFFFFF', fontWeight: '200', marginBottom: 24, letterSpacing: -0.5 }}>
+              Today's Metrics
+            </Text>
+
+            {/* AI Summary */}
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 28 }}>
+              <Text style={{ fontSize: 11, color: '#A0B0BA', fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>Echo Insight</Text>
+              <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 22 }}>
+                Your{' '}
+                <Text style={{ color: '#818CF8', fontWeight: '600' }}>😴 sleep {latest.sleep}h</Text>
+                {' '}and{' '}
+                <Text style={{ color: '#F87171', fontWeight: '600' }}>❤️ HR {latest.heartRate}bpm</Text>
+                {' '}are within target. Watch{' '}
+                <Text style={{ color: '#34D399', fontWeight: '600' }}>🏃 activity {latest.activity}km</Text>
+                {' '}— tap any card to see your full trend.
               </Text>
             </View>
 
-            <Text className="text-[#A0B0BA] text-xs font-semibold tracking-[0.2em] uppercase mb-6">All Metrics</Text>
+            {/* Section label */}
+            <Text style={{ fontSize: 11, color: '#A0B0BA', fontWeight: '600', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 }}>
+              All Metrics
+            </Text>
 
-            <View className="flex-row flex-wrap justify-between">
-              {/* Card 1: Sleep */}
-              <View className="w-[48%] bg-white/5 p-5 rounded-[24px] mb-4 border border-white/10 shadow-sm">
-                <View className="flex-row items-center mb-6">
-                  <Text className="text-lg mr-2">😴</Text>
-                  <Text className="text-[#A0B0BA] font-medium tracking-wide text-xs uppercase">Sleep</Text>
-                </View>
-                <View className="flex-row items-baseline mb-3">
-                  <Text className="text-white font-thin tracking-tighter text-5xl">7.2</Text>
-                  <Text className="text-[#A0B0BA] ml-1 text-xs font-medium">hrs</Text>
-                </View>
-                <Text className="text-[#22C55E] text-xs font-medium tracking-wide">↑ 5%</Text>
-              </View>
+            {/* 2-column grid */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              {METRICS.map((key) => {
+                const meta = METRIC_META[key];
+                const val  = latest[key] as number;
+                const d    = delta(key);
+                const isGood = d !== null
+                  ? (meta.goodDirection === 'up' ? parseFloat(d) >= 0 : parseFloat(d) <= 0)
+                  : true;
+                const deltaColor = isGood ? '#22C55E' : '#EF4444';
+                const arrow = d !== null ? (parseFloat(d) >= 0 ? '↑' : '↓') : '';
 
-              {/* Card 2: Heart Rate */}
-              <View className="w-[48%] bg-white/5 p-5 rounded-[24px] mb-4 border border-white/10 shadow-sm">
-                <View className="flex-row items-center mb-6">
-                  <Text className="text-lg mr-2">❤️</Text>
-                  <Text className="text-[#A0B0BA] font-medium tracking-wide text-xs uppercase">Heart Rate</Text>
-                </View>
-                <View className="flex-row items-baseline mb-3">
-                  <Text className="text-white font-thin tracking-tighter text-5xl">68</Text>
-                  <Text className="text-[#A0B0BA] ml-1 text-xs font-medium">bpm</Text>
-                </View>
-                <Text className="text-[#22C55E] text-xs font-medium tracking-wide">↓ 2%</Text>
-              </View>
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => navigation.navigate('MetricDetail', { metric: key })}
+                    style={{
+                      width: '47.5%',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      borderRadius: 24,
+                      padding: 20,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.09)',
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    {/* Icon + label row */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18 }}>
+                      <Text style={{ fontSize: 18, marginRight: 8 }}>{meta.emoji}</Text>
+                      <Text style={{ fontSize: 11, color: '#A0B0BA', fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                        {meta.label}
+                      </Text>
+                    </View>
 
-              {/* Card 3: Activity */}
-              <View className="w-[48%] bg-white/5 p-5 rounded-[24px] mb-4 border border-white/10 shadow-sm">
-                <View className="flex-row items-center mb-6">
-                  <Text className="text-lg mr-2">🏃</Text>
-                  <Text className="text-[#A0B0BA] font-medium tracking-wide text-xs uppercase">Activity</Text>
-                </View>
-                <View className="flex-row items-baseline mb-3">
-                  <Text className="text-white font-thin tracking-tighter text-5xl">4.2</Text>
-                  <Text className="text-[#A0B0BA] ml-1 text-xs font-medium">km</Text>
-                </View>
-                <Text className="text-[#EAB308] text-xs font-medium tracking-wide">↓ 15%</Text>
-              </View>
-              
-              {/* Card 4: Calories */}
-              <View className="w-[48%] bg-white/5 p-5 rounded-[24px] mb-4 border border-white/10 shadow-sm">
-                <View className="flex-row items-center mb-6">
-                  <Text className="text-lg mr-2">🔥</Text>
-                  <Text className="text-[#A0B0BA] font-medium tracking-wide text-xs uppercase">Calories</Text>
-                </View>
-                <View className="flex-row items-baseline mb-3">
-                  <Text className="text-white font-thin tracking-tighter text-5xl">2,340</Text>
-                  <Text className="text-[#A0B0BA] ml-1 text-xs font-medium">kcal</Text>
-                </View>
-                <Text className="text-[#22C55E] text-xs font-medium tracking-wide">↑ 3%</Text>
-              </View>
+                    {/* Value */}
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 }}>
+                      <Text style={{ fontSize: 40, color: meta.color, fontWeight: '100', letterSpacing: -1 }}>
+                        {val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: '#A0B0BA', marginLeft: 4, fontWeight: '500' }}>{meta.unit}</Text>
+                    </View>
 
-              {/* Card 5: HRV */}
-              <View className="w-[48%] bg-white/5 p-5 rounded-[24px] mb-4 border border-white/10 shadow-sm">
-                <View className="flex-row items-center mb-6">
-                  <Text className="text-lg mr-2">🧘</Text>
-                  <Text className="text-[#A0B0BA] font-medium tracking-wide text-xs uppercase">HRV</Text>
-                </View>
-                <View className="flex-row items-baseline mb-3">
-                  <Text className="text-white font-thin tracking-tighter text-5xl">52</Text>
-                  <Text className="text-[#A0B0BA] ml-1 text-xs font-medium">ms</Text>
-                </View>
-                <Text className="text-[#22C55E] text-xs font-medium tracking-wide">↑ 8%</Text>
-              </View>
+                    {/* Delta */}
+                    <Text style={{ fontSize: 12, color: deltaColor, fontWeight: '600' }}>
+                      {arrow} {d !== null ? `${Math.abs(parseFloat(d))}%` : '—'}
+                    </Text>
 
-              {/* Card 6: Hydration */}
-              <View className="w-[48%] bg-white/5 p-5 rounded-[24px] mb-4 border border-white/10 shadow-sm">
-                <View className="flex-row items-center mb-6">
-                  <Text className="text-lg mr-2">💧</Text>
-                  <Text className="text-[#A0B0BA] font-medium tracking-wide text-xs uppercase">Hydration</Text>
-                </View>
-                <View className="flex-row items-baseline mb-3">
-                  <Text className="text-white font-thin tracking-tighter text-5xl">1.8</Text>
-                  <Text className="text-[#A0B0BA] ml-1 text-xs font-medium">L</Text>
-                </View>
-                <Text className="text-[#22C55E] text-xs font-medium tracking-wide">→ Same</Text>
-              </View>
-
+                    {/* Tap hint */}
+                    <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>Tap for trends →</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+
           </ScrollView>
         </SafeAreaView>
       </BackgroundGradient>
