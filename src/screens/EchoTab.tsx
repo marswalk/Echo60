@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Platform, Animated } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import Svg, { Path } from 'react-native-svg';
 import EchoStudioBottomSheet from './EchoStudioBottomSheet';
 import BackgroundGradient from '../components/BackgroundGradient';
 import { WebView } from 'react-native-webview';
@@ -137,21 +139,112 @@ const WebIframe = ({ html }: { html: string }) => {
   return null;
 };
 
+let hasLaunched = false;
+
 export default function EchoTab() {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [step, setStep] = useState(0); // 0: greeting, 1: bio age, 2: echo60 age
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const initialStep = hasLaunched ? 1 : 0;
+      setStep(initialStep);
+      fadeAnim.setValue(0);
+
+      const runSequence = async () => {
+        const fadeIn = () => new Promise(r => Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start(r));
+        const fadeOut = () => new Promise(r => Animated.timing(fadeAnim, { toValue: 0, duration: 800, useNativeDriver: true }).start(r));
+        const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+        if (initialStep === 0) {
+          // Greeting
+          await fadeIn();
+          await wait(1500);
+          if (!isMounted) return;
+          await fadeOut();
+          if (!isMounted) return;
+          hasLaunched = true;
+          setStep(1);
+        }
+
+        if (!isMounted) return;
+
+        // Bio Age
+        await fadeIn();
+        await wait(2000);
+        if (!isMounted) return;
+        await fadeOut();
+        if (!isMounted) return;
+        setStep(2);
+
+        // Echo60 Age
+        await fadeIn();
+      };
+
+      runSequence();
+
+      return () => {
+        isMounted = false;
+        fadeAnim.stopAnimation();
+      };
+    }, [fadeAnim])
+  );
 
   return (
     <View className="flex-1">
       <BackgroundGradient>
         <SafeAreaView className="flex-1">
-          <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingTop: 60, paddingBottom: 100 }}>
+          <ScrollView 
+            contentContainerStyle={{ 
+              flexGrow: 1, 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              paddingTop: 60, 
+              paddingBottom: 120 
+            }}
+            showsVerticalScrollIndicator={false}
+          >
             
-            {/* Age Section */}
-            <Text className="text-[#A0B0BA] text-sm tracking-[0.3em] uppercase mb-2 font-semibold">Your Echo60 Age</Text>
-            <Text className="text-[#00FFFF] text-[110px] font-thin tracking-tighter leading-none mb-16 shadow-[0_0_20px_rgba(0,255,255,0.3)]">55</Text>
+            {/* Top Sequence Area */}
+            <View className="h-[220px] w-full items-center justify-center">
+              <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
+                
+                {step === 0 && (
+                  <Text className="text-[#00FFFF] text-3xl font-light tracking-wide text-center">Hello Sixel,</Text>
+                )}
+
+                {step === 1 && (
+                  <View className="items-center w-full">
+                    <Text className="text-[#A0B0BA] text-sm tracking-[0.2em] uppercase mb-2 font-semibold text-center">You're currently biologically</Text>
+                    <Text className="text-white text-[90px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(255,255,255,0.3)]">32</Text>
+                  </View>
+                )}
+
+                {step === 2 && (
+                  <View className="items-center w-full">
+                    <Text className="text-[#A0B0BA] text-sm tracking-[0.3em] uppercase mb-2 font-semibold text-center">Your Echo60 Age</Text>
+                    <Text className="text-[#00FFFF] text-[110px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(0,255,255,0.3)]">55</Text>
+                    
+                    {/* Trajectory Text */}
+                    <View className="flex-row items-center mt-6">
+                      <Svg width={24} height={12} viewBox="0 0 24 12" className="mr-2">
+                        <Path d="M2 10 Q 12 10, 22 2" fill="none" stroke="#00FFFF" strokeWidth="2" strokeLinecap="round" />
+                        <Path d="M16 2 L 22 2 L 22 8" fill="none" stroke="#00FFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </Svg>
+                      <Text className="text-[#A0B0BA] text-sm font-light tracking-wide">
+                        Trajectory: <Text className="text-[#00FFFF] font-medium">Improving</Text> <Text className="text-white/60 text-xs">(+1.2 Vitality)</Text>
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+              </Animated.View>
+            </View>
 
             {/* The Animated Lava Orb */}
-            <View className="relative w-80 h-80 items-center justify-center mb-16">
+            <View className="relative w-80 h-80 items-center justify-center my-4">
               {Platform.OS === 'web' ? (
                 <WebIframe html={orbHtml} />
               ) : (
@@ -166,14 +259,9 @@ export default function EchoTab() {
               )}
             </View>
 
-            {/* Trajectory Text */}
-            <Text className="text-[#A0B0BA] text-sm font-light tracking-wide mb-16">
-              Trajectory: <Text className="text-[#00FFFF] font-medium">Improving</Text> (+1.2 Vitality this week)
-            </Text>
-
             {/* Action Pill Button */}
             <TouchableOpacity 
-              className="bg-white/5 py-4 px-8 rounded-full border border-white/10 w-[85%] items-center shadow-lg"
+              className="bg-white/5 py-4 px-8 rounded-full border border-white/10 w-[85%] items-center shadow-lg mt-8"
               onPress={() => setIsChatOpen(true)}
             >
               <Text className="text-white font-medium text-sm tracking-wide">✨ See what +1 hour of sleep does</Text>
