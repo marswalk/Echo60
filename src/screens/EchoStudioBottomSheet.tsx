@@ -72,9 +72,10 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userText }]);
     
     // Process input text using LLM Stub
-    const updates = await LoggingService.parseNaturalLanguageLog(userText);
+    const response = await LoggingService.parseNaturalLanguageLog(userText);
+    const updates = response.updates;
     
-    if (Object.keys(updates).length > 0) {
+    if (updates && Object.keys(updates).length > 0) {
       // Find today's date or the last log date to append to
       const todayDate = new Date().toISOString().split('T')[0];
       const baseEntry = profile?.data.find(d => d.date === todayDate) || profile?.data[profile.data.length - 1] || {
@@ -82,22 +83,14 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
       };
       
       await addDailyLog({ ...baseEntry, ...updates, date: todayDate });
-      
-      // Add success response
-      const updatedKeys = Object.keys(updates).join(', ');
-      setMessages(prev => [...prev, { 
-        id: (Date.now() + 1).toString(), 
-        role: 'assistant', 
-        text: `Got it! I've updated your ${updatedKeys} for today and recalculated your Echo60 trajectory.` 
-      }]);
-    } else {
-      // Add fallback response if nothing was parsed
-      setMessages(prev => [...prev, { 
-        id: (Date.now() + 1).toString(), 
-        role: 'assistant', 
-        text: "I couldn't find any health data to log from that message. Try being more specific, like 'I ran 3 miles'." 
-      }]);
     }
+    
+    // Always show the AI's contextual reply
+    setMessages(prev => [...prev, { 
+      id: (Date.now() + 1).toString(), 
+      role: 'assistant', 
+      text: response.reply
+    }]);
     
     setIsProcessing(false);
   };
