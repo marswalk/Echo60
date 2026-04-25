@@ -51,6 +51,9 @@ function getValues(range: Range, data: DailyEntry[], key: MetricKey): number[] {
 export default function MetricDetailScreen({ route, navigation }: Props) {
   const { metric } = route.params;
   const { profile } = useProfile();
+  
+  if (!profile) return <View style={{ flex: 1, backgroundColor: '#0A0A0A' }} />;
+
   const meta = METRIC_META[metric];
   const { width } = useWindowDimensions();
   const [range, setRange] = useState<Range>('week');

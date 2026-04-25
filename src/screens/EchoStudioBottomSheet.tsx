@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { useProfile } from '../context/ProfileContext';
+import { LoggingService } from '../services/LoggingService';
 
 type Props = {
   visible: boolean;
@@ -32,20 +34,73 @@ const EVENING_SUGGESTIONS = [
 
 export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
   const [inputText, setInputText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { addDailyLog, profile } = useProfile();
+  
+  const [messages, setMessages] = useState<{id: string, role: 'user' | 'assistant', text: string}[]>([]);
 
   const hour = new Date().getHours();
   let baseSuggestions = MORNING_SUGGESTIONS;
   if (hour >= 12 && hour < 17) baseSuggestions = AFTERNOON_SUGGESTIONS;
   else if (hour >= 17 || hour < 5) baseSuggestions = EVENING_SUGGESTIONS;
 
-  // Duplicate to create infinite scrolling illusion
   const suggestions = [...baseSuggestions, ...baseSuggestions, ...baseSuggestions, ...baseSuggestions, ...baseSuggestions];
 
   useEffect(() => {
     if (visible) {
       setInputText('');
+      setIsProcessing(false);
+      // Initialize with a greeting if empty
+      if (messages.length === 0) {
+        setMessages([{
+          id: 'greeting',
+          role: 'assistant',
+          text: `Hey ${profile?.name?.split(' ')[0] || 'there'}, how are you feeling? Log any activities, meals, or sleep.`
+        }]);
+      }
     }
-  }, [visible]);
+  }, [visible, profile]);
+
+  const handleSend = async () => {
+    if (!inputText.trim() || isProcessing) return;
+    
+    const userText = inputText;
+    setInputText('');
+    setIsProcessing(true);
+    
+    // Add user message to UI
+    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userText }]);
+    
+    // Process input text using LLM Stub
+    const updates = await LoggingService.parseNaturalLanguageLog(userText);
+    
+    if (Object.keys(updates).length > 0) {
+      // Find today's date or the last log date to append to
+      const todayDate = new Date().toISOString().split('T')[0];
+      const baseEntry = profile?.data.find(d => d.date === todayDate) || profile?.data[profile.data.length - 1] || {
+        date: todayDate, sleep: 7, heartRate: 65, activity: 5, calories: 2000, hrv: 50, hydration: 2
+      };
+      
+      await addDailyLog({ ...baseEntry, ...updates, date: todayDate });
+      
+      // Add success response
+      const updatedKeys = Object.keys(updates).join(', ');
+      setMessages(prev => [...prev, { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        text: `Got it! I've updated your ${updatedKeys} for today and recalculated your Echo60 trajectory.` 
+      }]);
+    } else {
+      // Add fallback response if nothing was parsed
+      setMessages(prev => [...prev, { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        text: "I couldn't find any health data to log from that message. Try being more specific, like 'I ran 3 miles'." 
+      }]);
+    }
+    
+    setIsProcessing(false);
+  };
 
   return (
     <Modal
@@ -68,7 +123,20 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
 
           {/* Chat Content */}
           <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 20 }}>
-            {/* Blank state for now */}
+            {messages.map((msg) => (
+              <View 
+                key={msg.id} 
+                className={`mb-4 max-w-[80%] rounded-2xl px-4 py-3 ${
+                  msg.role === 'user' 
+                    ? 'bg-[#E0E7FF] self-end rounded-tr-sm' 
+                    : 'bg-white/5 border border-white/10 self-start rounded-tl-sm'
+                }`}
+              >
+                <Text className={`${msg.role === 'user' ? 'text-[#0A1118]' : 'text-white'} text-[15px] leading-5`}>
+                  {msg.text}
+                </Text>
+              </View>
+            ))}
           </ScrollView>
 
           {/* Suggestions Area */}
@@ -113,10 +181,20 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
               placeholderTextColor="#A0B0BA"
               value={inputText}
               onChangeText={setInputText}
+              onSubmitEditing={handleSend}
               autoFocus={true}
+              editable={!isProcessing}
             />
-            <TouchableOpacity className="ml-3 w-12 h-12 bg-[#E0E7FF] rounded-full items-center justify-center">
-              <Text className="text-[#0A1118] font-bold text-lg">↑</Text>
+            <TouchableOpacity 
+              className="ml-3 w-12 h-12 bg-[#E0E7FF] rounded-full items-center justify-center opacity-90"
+              onPress={handleSend}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator color="#0A1118" />
+              ) : (
+                <Text className="text-[#0A1118] font-bold text-lg">↑</Text>
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

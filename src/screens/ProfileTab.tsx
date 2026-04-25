@@ -2,10 +2,9 @@ import React from 'react';
 import { View, Text, SafeAreaView, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import BackgroundGradient from '../components/BackgroundGradient';
 import { useProfile } from '../context/ProfileContext';
-import { MOCK_PROFILES } from '../data/mockData';
 
 export default function ProfileTab() {
-  const { profile, setProfileById } = useProfile();
+  const { profile, profiles, setProfileById } = useProfile();
 
   return (
     <View style={{ flex: 1 }}>
@@ -27,8 +26,8 @@ export default function ProfileTab() {
             </Text>
 
             <View style={{ gap: 12, marginBottom: 32 }}>
-              {MOCK_PROFILES.map((p) => {
-                const isActive = p.id === profile.id;
+              {profiles.map((p) => {
+                const isActive = profile && p.id === profile.id;
                 return (
                   <TouchableOpacity
                     key={p.id}

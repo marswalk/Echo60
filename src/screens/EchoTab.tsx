@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useProfile } from '../context/ProfileContext';
 
 import EchoStudioBottomSheet from './EchoStudioBottomSheet';
 import BackgroundGradient from '../components/BackgroundGradient';
@@ -161,6 +162,7 @@ const EVENING_PROMPTS = [
 ];
 
 export default function EchoTab() {
+  const { profile, isLoading } = useProfile();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [step, setStep] = useState(0); // 0: greeting, 1: bio age, 2: echo60 age
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -230,26 +232,26 @@ export default function EchoTab() {
               <View className="items-center w-full">
                 
                 {step === 0 && (
-                  <Text className="text-[#00FFFF] text-3xl font-light tracking-wide text-center">Hello Sixel,</Text>
+                  <Text className="text-[#00FFFF] text-3xl font-light tracking-wide text-center">Hello {profile?.name.split(' ')[0] || 'User'},</Text>
                 )}
 
                 {step === 1 && (
                   <View className="items-center w-full">
                     <Text className="text-[#A0B0BA] text-sm tracking-[0.2em] uppercase mb-2 font-semibold text-center">You're currently biologically</Text>
-                    <Text className="text-white text-[90px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(255,255,255,0.3)]">32</Text>
+                    <Text className="text-white text-[90px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(255,255,255,0.3)]">{profile?.age || '--'}</Text>
                   </View>
                 )}
 
                 {step === 2 && (
                   <View className="items-center w-full">
                     <Text className="text-[#A0B0BA] text-sm tracking-[0.3em] uppercase mb-2 font-semibold text-center">Your Echo60 Age</Text>
-                    <Text className="text-[#00FFFF] text-[110px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(0,255,255,0.3)]">55</Text>
+                    <Text className="text-[#00FFFF] text-[110px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(0,255,255,0.3)]">{profile?.bioAge || '--'}</Text>
                     
                     {/* Trajectory Text */}
                     <View className="flex-row items-center mt-6">
                       <Text className="text-[#00FFFF] text-xl mr-2 font-bold">↗</Text>
                       <Text className="text-[#A0B0BA] text-sm font-light tracking-wide">
-                        Trajectory: <Text className="text-[#00FFFF] font-medium">Improving</Text> <Text className="text-white/60 text-xs">(+1.2 Vitality)</Text>
+                        Trajectory: <Text className="text-[#00FFFF] font-medium">Tracking</Text>
                       </Text>
                     </View>
                   </View>

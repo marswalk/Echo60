@@ -8,6 +8,9 @@ const METRICS: MetricKey[] = ['sleep', 'heartRate', 'activity', 'calories', 'hrv
 
 export default function MetricsTab({ navigation }: { navigation: any }) {
   const { profile } = useProfile();
+  
+  if (!profile) return <View style={{ flex: 1, backgroundColor: '#0A0A0A' }} />;
+
   const latest = profile.data[profile.data.length - 1];
   const prev   = profile.data[profile.data.length - 8]; // 7 days ago
 
