@@ -8,6 +8,10 @@ import { DailyEntry } from '../types';
 export interface LLMResponse {
   reply: string;
   updates: Partial<DailyEntry>;
+  simulationImpact?: {
+    projectedAge: number;
+    label: string;
+  };
 }
 
 export class LoggingService {
@@ -40,11 +44,14 @@ ${profileContext || "No context provided."}
 
 The user will talk to you about their health. They might officially log an event ("I ran 5km"), or ask for a simulation ("What if I keep living like this?", "What if I drink 3 glasses of wine?").
 
-Your job is to respond with a JSON object containing TWO fields:
+Your job is to respond with a JSON object containing THREE fields:
 1. "reply": An in-character response as their Future Health Twin.
    - If logging an event: Keep it concise, confirm the log, and briefly mention how it positively or negatively shifts their future trajectory.
-   - IF asking for a SIMULATION: Create a clear, emotionally engaging "Future Self moment". Extrapolate their current metrics and the hypothetical behavior decades into the future. Detail the specific impacts on aging, morbidity, and longevity (e.g., cardiovascular health, cognitive function, how their Echo60 age might drastically change). Make the long-term consequences deeply personal, vivid, and actionable.
+   - IF asking for a SIMULATION: Create a clear, emotionally engaging "Future Self moment". Extrapolate their current metrics and the hypothetical behavior decades into the future. Detail the specific impacts on aging, morbidity, and longevity.
 2. "updates": A JSON object containing any quantifiable health metrics to officially log.
+3. "simulationImpact": (ONLY IF SIMULATING) A JSON object predicting their Echo60 Age if they adopt this behavior. It must contain:
+   - "projectedAge": The calculated Echo60 Age number (e.g. 62.5). Baseline is 60. Better habits subtract from 60, worse habits add to 60. Use their current Echo60 age as a starting point.
+   - "label": A short, punchy label for this projection (e.g., "Daily Wine Habit", "Improved Sleep Routine").
 
 CRITICAL RULES:
 - If the user is asking for a SIMULATION, you MUST return an empty object {} for "updates". Do NOT log hypothetical scenarios.
@@ -74,7 +81,8 @@ User Input: "${text}"
       // Safety check in case the LLM doesn't follow strict structure
       return {
         reply: parsedData.reply || "I've noted that down.",
-        updates: parsedData.updates || {}
+        updates: parsedData.updates || {},
+        simulationImpact: parsedData.simulationImpact
       };
       
     } catch (e) {

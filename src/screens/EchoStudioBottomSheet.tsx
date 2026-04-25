@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import Svg, { Path, Line } from 'react-native-svg';
 import { useProfile } from '../context/ProfileContext';
 import { LoggingService } from '../services/LoggingService';
 
@@ -37,7 +38,13 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { addDailyLog, profile } = useProfile();
   
-  const [messages, setMessages] = useState<{id: string, role: 'user' | 'assistant', text: string}[]>([]);
+  const [messages, setMessages] = useState<{
+    id: string; 
+    role: 'user' | 'assistant'; 
+    text: string;
+    simulationImpact?: { projectedAge: number; label: string };
+    baselineAge?: number;
+  }[]>([]);
 
   const hour = new Date().getHours();
   let baseSuggestions = MORNING_SUGGESTIONS;
@@ -111,11 +118,15 @@ Recent Metrics (Latest Day):
       await addDailyLog({ ...baseEntry, ...updates, date: todayDate });
     }
     
-    // Always show the AI's contextual reply
+    const currentAge = profile?.bioAge || 60;
+
+    // Always show the AI's contextual reply and any simulation impact
     setMessages(prev => [...prev, { 
       id: (Date.now() + 1).toString(), 
       role: 'assistant', 
-      text: response.reply
+      text: response.reply,
+      simulationImpact: response.simulationImpact,
+      baselineAge: currentAge
     }]);
     
     setIsProcessing(false);
@@ -143,17 +154,77 @@ Recent Metrics (Latest Day):
           {/* Chat Content */}
           <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 20 }}>
             {messages.map((msg) => (
-              <View 
-                key={msg.id} 
-                className={`mb-4 max-w-[80%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user' 
-                    ? 'bg-[#E0E7FF] self-end rounded-tr-sm' 
-                    : 'bg-white/5 border border-white/10 self-start rounded-tl-sm'
-                }`}
-              >
-                <Text className={`${msg.role === 'user' ? 'text-[#0A1118]' : 'text-white'} text-[15px] leading-5`}>
-                  {msg.text}
-                </Text>
+              <View key={msg.id} className="mb-4">
+                <View 
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    msg.role === 'user' 
+                      ? 'bg-[#E0E7FF] self-end rounded-tr-sm' 
+                      : 'bg-white/5 border border-white/10 self-start rounded-tl-sm'
+                  }`}
+                >
+                  <Text className={`${msg.role === 'user' ? 'text-[#0A1118]' : 'text-white'} text-[15px] leading-5`}>
+                    {msg.text}
+                  </Text>
+                </View>
+                
+                {/* Enhanced Simulation Impact Card */}
+                {msg.simulationImpact && msg.baselineAge && (
+                  <View className="mt-1 self-start bg-[#141A21] border border-[#2A3441] rounded-xl p-3 w-[80%] flex-col shadow-sm">
+                    
+                    {/* Header: Label */}
+                    <View className="flex-row items-center mb-2">
+                      <View className="bg-blue-500/20 w-6 h-6 rounded-full items-center justify-center mr-2">
+                        <Text className="text-[10px]">🧬</Text>
+                      </View>
+                      <Text className="text-[#A0B0BA] text-[10px] font-semibold uppercase tracking-wider flex-1" numberOfLines={1}>
+                        Impact: {msg.simulationImpact.label}
+                      </Text>
+                    </View>
+
+                    {/* Body: Current -> New */}
+                    <View className="flex-row items-center justify-between mb-3 px-1">
+                      <View className="items-center">
+                        <Text className="text-white text-lg font-bold leading-tight">{msg.baselineAge}</Text>
+                        <Text className="text-[#6B7280] text-[8px] uppercase font-bold mt-0.5">Current</Text>
+                      </View>
+                      
+                      <Text className="text-[#4B5563] text-sm">➔</Text>
+                      
+                      <View className="items-center">
+                        <Text className={`text-lg font-bold leading-tight ${msg.simulationImpact.projectedAge < msg.baselineAge ? 'text-blue-400' : 'text-red-400'}`}>
+                          {msg.simulationImpact.projectedAge}
+                        </Text>
+                        <Text className={`text-[8px] uppercase font-bold mt-0.5 ${msg.simulationImpact.projectedAge < msg.baselineAge ? 'text-blue-400/80' : 'text-red-400/80'}`}>Projected</Text>
+                      </View>
+                    </View>
+
+                    {/* Chart Visualization */}
+                    <View className="h-8 w-full rounded-md bg-[#0F1318] overflow-hidden justify-center border border-[#1A222B]">
+                      <Svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+                        {/* Baseline: Straight Grey Line */}
+                        <Line x1="0" y1="20" x2="100" y2="20" stroke="#4B5563" strokeWidth="2" strokeDasharray="4 4" />
+                        
+                        {/* Dynamic Curve */}
+                        {(() => {
+                          const diff = msg.simulationImpact.projectedAge - msg.baselineAge;
+                          const clampedDiff = Math.max(-10, Math.min(10, diff));
+                          const targetY = 20 - (clampedDiff * 1.5); 
+                          const color = diff < 0 ? '#60A5FA' : '#F87171';
+                          
+                          return (
+                            <Path 
+                              d={`M0 20 C40 20 60 ${targetY} 100 ${targetY}`} 
+                              stroke={color} 
+                              strokeWidth="3" 
+                              fill="none" 
+                            />
+                          );
+                        })()}
+                      </Svg>
+                    </View>
+
+                  </View>
+                )}
               </View>
             ))}
           </ScrollView>
