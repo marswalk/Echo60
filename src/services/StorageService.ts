@@ -4,6 +4,7 @@ import { calculateEcho60Age } from '../utils/bioAge';
 
 const PROFILES_KEY = '@echo60_profiles';
 const ACTIVE_PROFILE_ID_KEY = '@echo60_active_profile_id';
+const ONBOARDING_COMPLETED_KEY = '@echo60_onboarding_completed';
 
 export class StorageService {
   static async getProfiles(): Promise<Profile[]> {
@@ -40,6 +41,23 @@ export class StorageService {
       await AsyncStorage.setItem(ACTIVE_PROFILE_ID_KEY, id);
     } catch (e) {
       console.error('Failed to set active profile ID', e);
+    }
+  }
+
+  static async getHasCompletedOnboarding(): Promise<boolean> {
+    try {
+      const value = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
+      return value === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static async setHasCompletedOnboarding(completed: boolean): Promise<void> {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, completed ? 'true' : 'false');
+    } catch (e) {
+      console.error('Failed to set onboarding state', e);
     }
   }
 
