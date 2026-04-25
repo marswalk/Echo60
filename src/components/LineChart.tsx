@@ -1,6 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
-import Svg, { Polyline, Line, Text as SvgText, Circle, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
+import { View, Text } from 'react-native';
 
 interface LineChartProps {
   data: number[];
@@ -13,7 +12,7 @@ interface LineChartProps {
 
 const PAD = { top: 16, right: 16, bottom: 36, left: 48 };
 
-export default function LineChart({ data, labels, color, width, height, unit }: LineChartProps) {
+export default function LineChart({ data, labels, color, width, height }: LineChartProps) {
   if (!data || data.length < 2) return null;
 
   const chartW = width - PAD.left - PAD.right;
@@ -23,20 +22,9 @@ export default function LineChart({ data, labels, color, width, height, unit }: 
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  // Map data point → SVG coords
+  // Map data point to chart coordinates
   const px = (i: number) => PAD.left + (i / (data.length - 1)) * chartW;
   const py = (v: number) => PAD.top + chartH - ((v - min) / range) * chartH;
-
-  const polylinePoints = data.map((v, i) => `${px(i)},${py(v)}`).join(' ');
-
-  // Build filled area path
-  const areaPath = [
-    `M ${px(0)} ${py(data[0])}`,
-    ...data.slice(1).map((v, i) => `L ${px(i + 1)} ${py(v)}`),
-    `L ${px(data.length - 1)} ${PAD.top + chartH}`,
-    `L ${px(0)} ${PAD.top + chartH}`,
-    'Z',
-  ].join(' ');
 
   // Y axis labels (3 ticks)
   const ticks = [min, min + range * 0.5, max];
@@ -46,84 +34,130 @@ export default function LineChart({ data, labels, color, width, height, unit }: 
     ? [0, Math.floor((data.length - 1) / 2), data.length - 1]
     : [];
 
-  const gradId = `grad_${color.replace('#', '')}`;
+  const lineSegments = data.slice(1).map((v, i) => {
+    const x1 = px(i);
+    const y1 = py(data[i]);
+    const x2 = px(i + 1);
+    const y2 = py(v);
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+
+    return {
+      key: `seg-${i}`,
+      left: (x1 + x2) / 2 - length / 2,
+      top: (y1 + y2) / 2,
+      length,
+      angle,
+    };
+  });
 
   return (
     <View>
-      <Svg width={width} height={height}>
-        <Defs>
-          <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity="0.35" />
-            <Stop offset="1" stopColor={color} stopOpacity="0" />
-          </LinearGradient>
-        </Defs>
-
+      <View style={{ width, height, position: 'relative' }}>
         {/* Horizontal grid lines */}
         {ticks.map((t, i) => (
-          <Line
-            key={i}
-            x1={PAD.left}
-            y1={py(t)}
-            x2={PAD.left + chartW}
-            y2={py(t)}
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth={1}
+          <View
+            key={`grid-${i}`}
+            style={{
+              position: 'absolute',
+              left: PAD.left,
+              top: py(t),
+              width: chartW,
+              height: 1,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+            }}
           />
         ))}
 
-        {/* Filled area */}
-        <Path d={areaPath} fill={`url(#${gradId})`} />
+        {/* Main line segments */}
+        {lineSegments.map((seg) => (
+          <View
+            key={seg.key}
+            style={{
+              position: 'absolute',
+              left: seg.left,
+              top: seg.top,
+              width: seg.length,
+              height: 2.5,
+              backgroundColor: color,
+              borderRadius: 2,
+              transform: [{ rotate: `${seg.angle}rad` }],
+            }}
+          />
+        ))}
 
-        {/* Main line */}
-        <Polyline
-          points={polylinePoints}
-          fill="none"
-          stroke={color}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        {/* Data points */}
+        {data.map((v, i) => (
+          <View
+            key={`point-${i}`}
+            style={{
+              position: 'absolute',
+              left: px(i) - 2,
+              top: py(v) - 2,
+              width: 4,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: color,
+              opacity: 0.8,
+            }}
+          />
+        ))}
 
         {/* Data dot at last point */}
-        <Circle
-          cx={px(data.length - 1)}
-          cy={py(data[data.length - 1])}
-          r={4}
-          fill={color}
-          stroke="rgba(0,0,0,0.5)"
-          strokeWidth={2}
+        <View
+          style={{
+            position: 'absolute',
+            left: px(data.length - 1) - 4,
+            top: py(data[data.length - 1]) - 4,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: color,
+            borderWidth: 2,
+            borderColor: 'rgba(0,0,0,0.5)',
+          }}
         />
 
         {/* Y axis labels */}
         {ticks.map((t, i) => (
-          <SvgText
-            key={i}
-            x={PAD.left - 6}
-            y={py(t) + 4}
-            textAnchor="end"
-            fontSize={10}
-            fill="rgba(255,255,255,0.35)"
+          <Text
+            key={`y-${i}`}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: py(t) - 8,
+              width: PAD.left - 8,
+              textAlign: 'right',
+              fontSize: 10,
+              color: 'rgba(255,255,255,0.45)',
+            }}
           >
             {t % 1 === 0 ? t.toFixed(0) : t.toFixed(1)}
-          </SvgText>
+          </Text>
         ))}
 
         {/* X axis labels */}
         {xLabels.map((idx) =>
           labels ? (
-            <SvgText
-              key={idx}
-              x={px(idx)}
-              y={height - 6}
-              textAnchor="middle"
-              fontSize={10}
-              fill="rgba(255,255,255,0.35)"
+            <Text
+              key={`x-${idx}`}
+              style={{
+                position: 'absolute',
+                left: px(idx) - 14,
+                top: height - 18,
+                width: 28,
+                textAlign: 'center',
+                fontSize: 10,
+                color: 'rgba(255,255,255,0.45)',
+              }}
             >
               {labels[idx]}
-            </SvgText>
+            </Text>
           ) : null
         )}
-      </Svg>
+      </View>
     </View>
   );
 }
