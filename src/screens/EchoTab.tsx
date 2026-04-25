@@ -178,6 +178,7 @@ const EVENING_PROMPTS = [
 export default function EchoTab() {
   const { profile, isLoading } = useProfile();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [step, setStep] = useState(0); // 0: greeting, 1: bio age, 2: echo60 age
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
@@ -277,15 +278,36 @@ export default function EchoTab() {
             {/* The Animated Lava Orb */}
             <View className="relative w-80 h-80 items-center justify-center my-4">
               {/* Floating Health Metrics */}
-              <View className="absolute top-12 -left-8 bg-black/40 px-3 py-2 rounded-2xl border border-red-500/30 z-10 shadow-lg">
+              <TouchableOpacity
+                onPress={() => {
+                  setChatInitialMessage("Why do I have a +15% chance of cancer based on my current data? Please explain the key risk factors.");
+                  setIsChatOpen(true);
+                }}
+                activeOpacity={0.75}
+                className="absolute top-12 -left-8 bg-black/40 px-3 py-2 rounded-2xl border border-red-500/30 z-10 shadow-lg"
+              >
                 <Text className="text-red-400 text-xs font-medium">+15% chance of cancer</Text>
-              </View>
-              <View className="absolute bottom-16 -right-10 bg-black/40 px-3 py-2 rounded-2xl border border-green-500/30 z-10 shadow-lg">
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setChatInitialMessage("Why does my data show a -10% chance of liver failure? What am I doing well that reduces this risk?");
+                  setIsChatOpen(true);
+                }}
+                activeOpacity={0.75}
+                className="absolute bottom-16 -right-10 bg-black/40 px-3 py-2 rounded-2xl border border-green-500/30 z-10 shadow-lg"
+              >
                 <Text className="text-green-400 text-xs font-medium">-10% chance of liver failure</Text>
-              </View>
-              <View className="absolute top-1/3 -right-8 bg-black/40 px-3 py-2 rounded-2xl border border-green-500/30 z-10 shadow-lg">
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setChatInitialMessage("How am I gaining +2 years of healthspan according to my current metrics? What should I keep doing?");
+                  setIsChatOpen(true);
+                }}
+                activeOpacity={0.75}
+                className="absolute top-1/3 -right-8 bg-black/40 px-3 py-2 rounded-2xl border border-green-500/30 z-10 shadow-lg"
+              >
                 <Text className="text-green-400 text-xs font-medium">+2 yrs healthspan</Text>
-              </View>
+              </TouchableOpacity>
               
               {Platform.OS === 'web' ? (
                 <WebIframe html={orbHtml} />
@@ -318,7 +340,14 @@ export default function EchoTab() {
           </ScrollView>
 
           {/* Chat UI Bottom Sheet Overlay */}
-          <EchoStudioBottomSheet visible={isChatOpen} onClose={() => setIsChatOpen(false)} />
+          <EchoStudioBottomSheet
+            visible={isChatOpen}
+            onClose={() => {
+              setIsChatOpen(false);
+              setChatInitialMessage(undefined);
+            }}
+            initialMessage={chatInitialMessage}
+          />
         </SafeAreaView>
       </BackgroundGradient>
     </View>
