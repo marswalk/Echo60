@@ -81,41 +81,44 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
     // Create context string
     const todayDate = new Date().toISOString().split('T')[0];
     
-    // Find today's entry, or create a fresh one
-    let baseEntry = profile?.data.find(d => d.date === todayDate);
-    if (!baseEntry) {
-      // If today doesn't exist, we start fresh but we can optionally 
-      // pull baseline averages. For now, a clean slate for today.
-      baseEntry = {
-        date: todayDate, 
-        sleep: undefined, 
-        heartRate: undefined, 
-        activity: 0, 
-        calories: 0, 
-        hrv: undefined, 
-        hydration: 0
-      };
-    }
+    // Find today's entry to serve as a base context, but pass full recent history
+    const recentHistory = profile?.data.slice(-7) || [];
     
     const profileContext = profile ? `
 Name: ${profile.name}
-Biological Age: ${profile.age}
-Echo60 Age (Predicted Age at 60): ${profile.bioAge}
-Recent Metrics (Latest Day):
-- Sleep: ${baseEntry.sleep || '--'} hours
-- Heart Rate: ${baseEntry.heartRate || '--'} bpm
-- Activity: ${baseEntry.activity || '0'} km
-- HRV: ${baseEntry.hrv || '--'} ms
-- Calories: ${baseEntry.calories || '0'} kcal
-- Hydration: ${baseEntry.hydration || '0'} L
+Chronological Age: ${profile.age}
+CURRENT Echo60 Age (Predicted Age at 60): ${profile.bioAge}
+CURRENT DATE: ${todayDate}
+
+Historical Data (Last 7 days):
+${JSON.stringify(recentHistory, null, 2)}
 ` : undefined;
     
     // Process input text using LLM Stub
     const response = await LoggingService.parseNaturalLanguageLog(userText, profileContext);
     const updates = response.updates;
+    const newEcho60Age = response.newEcho60Age;
     
-    if (updates && Object.keys(updates).length > 0) {
-      await addDailyLog({ ...baseEntry, ...updates, date: todayDate });
+    if (updates && updates.length > 0) {
+      for (const update of updates) {
+        const targetDate = update.date || todayDate;
+        let baseEntry = profile?.data.find(d => d.date === targetDate) || {
+          date: targetDate, 
+          sleep: undefined, 
+          heartRate: undefined, 
+          activity: 0, 
+          calories: 0, 
+          hrv: undefined, 
+          hydration: 0
+        };
+        await addDailyLog({ ...baseEntry, ...update.metrics, date: targetDate }, newEcho60Age);
+      }
+    } else if (newEcho60Age !== undefined) {
+      // Even if no updates, the LLM might have just changed the age based on conversation
+      let baseEntry = profile?.data.find(d => d.date === todayDate) || {
+        date: todayDate, activity: 0, calories: 0, hydration: 0
+      };
+      await addDailyLog(baseEntry as any, newEcho60Age);
     }
     
     const currentAge = profile?.bioAge || 60;

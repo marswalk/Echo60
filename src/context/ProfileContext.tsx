@@ -7,7 +7,7 @@ interface ProfileContextType {
   profile: Profile | null;
   profiles: Profile[];
   setProfileById: (id: string) => Promise<void>;
-  addDailyLog: (entry: DailyEntry) => Promise<void>;
+  addDailyLog: (entry: DailyEntry, newEcho60Age?: number) => Promise<void>;
   hasCompletedOnboarding: boolean;
   completeOnboarding: (newProfile?: Profile) => Promise<void>;
   skipOnboarding: () => Promise<void>;
@@ -82,10 +82,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addDailyLog = async (entry: DailyEntry) => {
+  const addDailyLog = async (entry: DailyEntry, newEcho60Age?: number) => {
     if (!profile) return;
     
-    const updatedProfile = await StorageService.updateProfileData(profile.id, entry);
+    const updatedProfile = await StorageService.updateProfileData(profile.id, entry, newEcho60Age);
     if (updatedProfile) {
       setProfile(updatedProfile);
       // Update in the profiles list too

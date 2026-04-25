@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Profile, DailyEntry } from '../types';
-import { calculateEcho60Age } from '../utils/bioAge';
 
 const PROFILES_KEY = '@echo60_profiles';
 const ACTIVE_PROFILE_ID_KEY = '@echo60_active_profile_id';
@@ -61,7 +60,7 @@ export class StorageService {
     }
   }
 
-  static async updateProfileData(profileId: string, entry: DailyEntry): Promise<Profile | null> {
+  static async updateProfileData(profileId: string, entry: DailyEntry, newEcho60Age?: number): Promise<Profile | null> {
     const profiles = await this.getProfiles();
     const index = profiles.findIndex(p => p.id === profileId);
     if (index === -1) return null;
@@ -74,22 +73,36 @@ export class StorageService {
       profile.data[entryIndex] = { ...profile.data[entryIndex], ...entry };
     } else {
       profile.data.push(entry);
+      // Sort data by date just in case LLM writes retroactively
+      profile.data.sort((a, b) => a.date.localeCompare(b.date));
       // Keep only last 90 days
       if (profile.data.length > 90) {
         profile.data.shift();
       }
     }
 
-    // Recalculate BioAge based on latest data
-    const newBioAge = calculateEcho60Age(profile.data);
-    profile.bioAge = newBioAge;
-    
-    // Update historical Echo60 trend if needed
-    const lastHistorical = profile.historicalEcho60[profile.historicalEcho60.length - 1];
-    if (!lastHistorical || lastHistorical.date !== entry.date) {
-      profile.historicalEcho60.push({ date: entry.date, age: newBioAge });
-    } else {
-      lastHistorical.age = newBioAge; // Update today's if it already exists
+    // Only update BioAge if LLM explicitly provided a new one
+    if (newEcho60Age !== undefined) {
+      const previousBioAge = profile.bioAge;
+      
+      // Determine trend direction based on movement from previous value
+      if (newEcho60Age < previousBioAge) {
+        profile.bioAgeTrend = 'improving'; // Age went down — biologically younger
+      } else if (newEcho60Age > previousBioAge) {
+        profile.bioAgeTrend = 'declining'; // Age went up — biologically older
+      } else {
+        profile.bioAgeTrend = 'neutral';
+      }
+
+      profile.bioAge = newEcho60Age;
+      
+      // Update historical Echo60 trend
+      const lastHistorical = profile.historicalEcho60[profile.historicalEcho60.length - 1];
+      if (!lastHistorical || lastHistorical.date !== entry.date) {
+        profile.historicalEcho60.push({ date: entry.date, age: newEcho60Age });
+      } else {
+        lastHistorical.age = newEcho60Age; // Update today's if it already exists
+      }
     }
 
     profiles[index] = profile;

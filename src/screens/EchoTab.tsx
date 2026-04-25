@@ -256,20 +256,38 @@ export default function EchoTab() {
                   </View>
                 )}
 
-                {step === 2 && (
-                  <View className="items-center w-full">
-                    <Text className="text-[#A0B0BA] text-sm tracking-[0.3em] uppercase mb-2 font-semibold text-center">Your Echo60 Age</Text>
-                    <Text className="text-[#00FFFF] text-[110px] font-thin tracking-tighter leading-none shadow-[0_0_20px_rgba(0,255,255,0.3)]">{profile?.bioAge || '--'}</Text>
-                    
-                    {/* Trajectory Text */}
-                    <View className="flex-row items-center mt-6">
-                      <Text className="text-[#00FFFF] text-xl mr-2 font-bold">↗</Text>
-                      <Text className="text-[#A0B0BA] text-sm font-light tracking-wide">
-                        Trajectory: <Text className="text-[#00FFFF] font-medium">Improving</Text>
+                {step === 2 && (() => {
+                  const echo60Age = profile?.bioAge || 60;
+                  const trend = profile?.bioAgeTrend;
+                  const isDeclining = trend === 'declining';
+                  const isRed = echo60Age > 60;
+
+                  const bigNumColor = isRed ? 'text-[#FF5733]' : 'text-[#00FFFF]';
+                  const bigNumShadow = isRed ? 'shadow-[0_0_20px_rgba(255,87,51,0.3)]' : 'shadow-[0_0_20px_rgba(0,255,255,0.3)]';
+
+                  // Arrow & label based on DIRECTION of last change, not absolute position
+                  const arrowColor = isDeclining ? 'text-[#FF8C42]' : 'text-[#00FFFF]';
+                  const arrow = !trend || trend === 'neutral' ? '→' : isDeclining ? '↘' : '↗';
+                  const trajectoryLabel = !trend || trend === 'neutral' ? 'Stable' : isDeclining ? 'Declining' : 'Improving';
+                  const labelColor = isDeclining ? 'text-[#FF8C42]' : 'text-[#00FFFF]';
+
+                  return (
+                    <View className="items-center w-full">
+                      <Text className="text-[#A0B0BA] text-sm tracking-[0.3em] uppercase mb-2 font-semibold text-center">Your Echo60 Age</Text>
+                      <Text className={`${bigNumColor} text-[110px] font-thin tracking-tighter leading-none ${bigNumShadow}`}>
+                        {echo60Age}
                       </Text>
+                      
+                      {/* Trajectory Text */}
+                      <View className="flex-row items-center mt-6">
+                        <Text className={`${arrowColor} text-xl mr-2 font-bold`}>{arrow}</Text>
+                        <Text className="text-[#A0B0BA] text-sm font-light tracking-wide">
+                          Trajectory: <Text className={`${labelColor} font-medium`}>{trajectoryLabel}</Text>
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  );
+                })()}
 
               </View>
             </View>

@@ -7,7 +7,8 @@ import { DailyEntry } from '../types';
  */
 export interface LLMResponse {
   reply: string;
-  updates: Partial<DailyEntry>;
+  updates: { date?: string; metrics: Partial<DailyEntry> }[];
+  newEcho60Age?: number;
   simulationImpact?: {
     projectedAge: number;
     label: string;
@@ -42,20 +43,20 @@ Your goal is to make the long-term consequences of their daily behavior emotiona
 Here is the user's current health context for TODAY (including their "Echo60 Age" which is their projected biological age at chronological age 60):
 ${profileContext || "No context provided."}
 
-The user will talk to you about their health. They might officially log an event ("I ran 5km"), or ask for a simulation ("What if I keep living like this?", "What if I drink 3 glasses of wine?").
+The user will talk to you about their health. They might log a recent event ("Yesterday I ran 5km"), or ask for a simulation ("What if I drink 3 glasses of wine?").
+YOU ARE THE ENGINE. You have complete control over updating the user's data across ANY date, and you are solely responsible for determining if their new behavior changes their biological age (Echo60 Age).
 
-Your job is to respond with a JSON object containing THREE fields:
+Your job is to respond with a JSON object containing FOUR fields:
 1. "reply": An in-character response as their Future Health Twin.
-   - If logging an event: Keep it concise, confirm the log, and briefly mention how it positively or negatively shifts their future trajectory.
-   - IF asking for a SIMULATION: Create a clear, emotionally engaging "Future Self moment". Extrapolate their current metrics and the hypothetical behavior decades into the future. Detail the specific impacts on aging, morbidity, and longevity.
-2. "updates": A JSON object containing any quantifiable health metrics to officially log.
-3. "simulationImpact": (ONLY IF SIMULATING) A JSON object predicting their Echo60 Age if they adopt this behavior. It must contain:
-   - "projectedAge": The calculated Echo60 Age number (e.g. 62.5). Baseline is 60. Better habits subtract from 60, worse habits add to 60. Use their current Echo60 age as a starting point.
-   - "label": A short, punchy label for this projection (e.g., "Daily Wine Habit", "Improved Sleep Routine").
+2. "updates": A JSON array containing any quantifiable health metrics to officially log. EACH object in the array must have:
+   - "date": The specific date to log this for in "YYYY-MM-DD" format. Infer this from the user's text (e.g. "yesterday"). If not specified, use today's date from the context.
+   - "metrics": A JSON object containing the quantifiable health metrics (sleep, heartRate, activity, calories, hrv, hydration). 
+3. "newEcho60Age": (OPTIONAL) If the user officially logs new data (NOT a simulation), evaluate their historical trend. If their new habits mathematically shift their biological trajectory, output their new calculated Echo60 Age (e.g. 62.5 or 58.1). If there is no significant change, omit this field.
+4. "simulationImpact": (ONLY IF SIMULATING) A JSON object predicting their Echo60 Age if they adopt this behavior. MUST contain "projectedAge" and "label".
 
 CRITICAL RULES:
-- If the user is asking for a SIMULATION, you MUST return an empty object {} for "updates". Do NOT log hypothetical scenarios.
-- For cumulative metrics like activity, calories, and hydration: if the user logs a new amount, ADD it to their existing daily total from the context. (e.g., if context says Activity: 5 km, and user says "I ran 3 km", return 8).
+- If the user asks for a SIMULATION, you MUST return an empty array [] for "updates". Do NOT log hypothetical scenarios.
+- For cumulative metrics like activity, calories, and hydration: if the user logs a new amount for a specific date, ADD it to any existing totals you see in the context for that date.
 - For state metrics like heart rate, sleep, or HRV: replace or update based on your best judgement.
 
 For the "updates" object, use this interface (only include fields you can infer):
@@ -81,7 +82,8 @@ User Input: "${text}"
       // Safety check in case the LLM doesn't follow strict structure
       return {
         reply: parsedData.reply || "I've noted that down.",
-        updates: parsedData.updates || {},
+        updates: Array.isArray(parsedData.updates) ? parsedData.updates : [],
+        newEcho60Age: parsedData.newEcho60Age,
         simulationImpact: parsedData.simulationImpact
       };
       
@@ -125,6 +127,6 @@ User Input: "${text}"
       reply = `A late night snack can disrupt your overnight glucose stability and sleep architecture. Try to leave 3 hours between eating and sleeping if you can! I've logged the extra calories.`;
     }
 
-    return { reply, updates: update };
+    return { reply, updates: [{ metrics: update }] };
   }
 }

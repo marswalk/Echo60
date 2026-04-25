@@ -57,6 +57,7 @@ export interface Profile {
   name: string;
   age: number;
   bioAge: number;
+  bioAgeTrend?: 'improving' | 'declining' | 'neutral'; // Direction of last Echo60 change
   emoji: string;
   tagline: string;
   data: DailyEntry[];
