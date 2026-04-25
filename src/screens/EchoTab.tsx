@@ -251,7 +251,7 @@ export default function EchoTab() {
                     <View className="flex-row items-center mt-6">
                       <Text className="text-[#00FFFF] text-xl mr-2 font-bold">↗</Text>
                       <Text className="text-[#A0B0BA] text-sm font-light tracking-wide">
-                        Trajectory: <Text className="text-[#00FFFF] font-medium">Tracking</Text>
+                        Trajectory: <Text className="text-[#00FFFF] font-medium">Improving</Text>
                       </Text>
                     </View>
                   </View>
@@ -262,6 +262,17 @@ export default function EchoTab() {
 
             {/* The Animated Lava Orb */}
             <View className="relative w-80 h-80 items-center justify-center my-4">
+              {/* Floating Health Metrics */}
+              <View className="absolute top-12 -left-8 bg-black/40 px-3 py-2 rounded-2xl border border-red-500/30 z-10 shadow-lg">
+                <Text className="text-red-400 text-xs font-medium">+15% chance of cancer</Text>
+              </View>
+              <View className="absolute bottom-16 -right-10 bg-black/40 px-3 py-2 rounded-2xl border border-green-500/30 z-10 shadow-lg">
+                <Text className="text-green-400 text-xs font-medium">-10% chance of liver failure</Text>
+              </View>
+              <View className="absolute top-1/3 -right-8 bg-black/40 px-3 py-2 rounded-2xl border border-green-500/30 z-10 shadow-lg">
+                <Text className="text-green-400 text-xs font-medium">+2 yrs healthspan</Text>
+              </View>
+              
               {Platform.OS === 'web' ? (
                 <WebIframe html={orbHtml} />
               ) : (
