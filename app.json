@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Echo60",
+    "slug": "echo60",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sixel.echo60",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Echo60 needs access to your health data to calculate your biological age and trajectories.",
+        "NSHealthUpdateUsageDescription": "Echo60 needs access to your health data to provide accurate insights."
+      }
+    },
+    "android": {
+      "package": "com.sixel.echo60"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "14.0"
+          }
+        }
+      ]
+    ]
+  }
+}
