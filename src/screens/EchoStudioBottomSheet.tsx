@@ -7,6 +7,7 @@ import { LoggingService } from '../services/LoggingService';
 type Props = {
   visible: boolean;
   onClose: () => void;
+  initialMessage?: string;
 };
 
 const MORNING_SUGGESTIONS = [
@@ -33,7 +34,7 @@ const EVENING_SUGGESTIONS = [
   "Log dinner: steak"
 ];
 
-export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
+export default function EchoStudioBottomSheet({ visible, onClose, initialMessage }: Props) {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const { addDailyLog, profile } = useProfile();
@@ -53,37 +54,49 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
 
   const suggestions = [...baseSuggestions, ...baseSuggestions, ...baseSuggestions, ...baseSuggestions, ...baseSuggestions];
 
+  // Auto-send initialMessage whenever the sheet opens with one
+  const prevVisibleRef = React.useRef(false);
   useEffect(() => {
-    if (visible) {
+    if (visible && !prevVisibleRef.current) {
       setInputText('');
       setIsProcessing(false);
-      // Initialize with a greeting if empty
-      if (messages.length === 0) {
-        setMessages([{
-          id: 'greeting',
-          role: 'assistant',
-          text: `Hey ${profile?.name?.split(' ')[0] || 'there'}, how are you feeling? Log any activities, meals, or sleep.`
-        }]);
+      // Seed greeting if conversation is fresh
+      const seedMessages: typeof messages = messages.length === 0
+        ? [{
+            id: 'greeting',
+            role: 'assistant' as const,
+            text: `Hey ${profile?.name?.split(' ')[0] || 'there'}, how are you feeling? Log any activities, meals, or sleep.`
+          }]
+        : messages;
+
+      if (initialMessage) {
+        // Show greeting first, then immediately fire the question
+        setMessages(seedMessages);
+        // Small delay so the sheet is visually open before sending
+        setTimeout(() => {
+          handleAutoSend(initialMessage, seedMessages);
+        }, 400);
+      } else if (messages.length === 0) {
+        setMessages(seedMessages);
       }
     }
-  }, [visible, profile]);
+    prevVisibleRef.current = visible;
+  }, [visible]);
 
-  const handleSend = async () => {
-    if (!inputText.trim() || isProcessing) return;
-    
-    const userText = inputText;
-    setInputText('');
+  /** Shared send logic, works with an arbitrary message and seed history. */
+  const handleAutoSend = async (
+    text: string,
+    baseMessages: typeof messages
+  ) => {
+    if (!text.trim() || isProcessing) return;
     setIsProcessing(true);
-    
-    // Add user message to UI
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userText }]);
-    
-    // Create context string
+    setMessages([...baseMessages, { id: Date.now().toString(), role: 'user', text }]);
+
     const todayDate = new Date().toISOString().split('T')[0];
-    
-    // Find today's entry to serve as a base context, but pass full recent history
+
+    // Pass full recent history as context for the LLM
     const recentHistory = profile?.data.slice(-7) || [];
-    
+
     const profileContext = profile ? `
 Name: ${profile.name}
 Chronological Age: ${profile.age}
@@ -93,46 +106,48 @@ CURRENT DATE: ${todayDate}
 Historical Data (Last 7 days):
 ${JSON.stringify(recentHistory, null, 2)}
 ` : undefined;
-    
-    // Process input text using LLM Stub
-    const response = await LoggingService.parseNaturalLanguageLog(userText, profileContext);
+
+    const response = await LoggingService.parseNaturalLanguageLog(text, profileContext);
     const updates = response.updates;
     const newEcho60Age = response.newEcho60Age;
-    
+
     if (updates && updates.length > 0) {
       for (const update of updates) {
         const targetDate = update.date || todayDate;
         let baseEntry = profile?.data.find(d => d.date === targetDate) || {
-          date: targetDate, 
-          sleep: undefined, 
-          heartRate: undefined, 
-          activity: 0, 
-          calories: 0, 
-          hrv: undefined, 
+          date: targetDate,
+          sleep: undefined,
+          heartRate: undefined,
+          activity: 0,
+          calories: 0,
+          hrv: undefined,
           hydration: 0
         };
         await addDailyLog({ ...baseEntry, ...update.metrics, date: targetDate }, newEcho60Age);
       }
     } else if (newEcho60Age !== undefined) {
-      // Even if no updates, the LLM might have just changed the age based on conversation
-      let baseEntry = profile?.data.find(d => d.date === todayDate) || {
+      // Even if no metric updates, the LLM may have shifted the age based on the conversation
+      const baseEntry = profile?.data.find(d => d.date === todayDate) || {
         date: todayDate, activity: 0, calories: 0, hydration: 0
       };
       await addDailyLog(baseEntry as any, newEcho60Age);
     }
-    
     const currentAge = profile?.bioAge || 60;
-
-    // Always show the AI's contextual reply and any simulation impact
-    setMessages(prev => [...prev, { 
-      id: (Date.now() + 1).toString(), 
-      role: 'assistant', 
+    setMessages(prev => [...prev, {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
       text: response.reply,
       simulationImpact: response.simulationImpact,
       baselineAge: currentAge
     }]);
-    
     setIsProcessing(false);
+  };
+
+  const handleSend = async () => {
+    if (!inputText.trim() || isProcessing) return;
+    const userText = inputText;
+    setInputText('');
+    await handleAutoSend(userText, messages);
   };
 
   return (
