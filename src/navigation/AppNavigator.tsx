@@ -1,39 +1,51 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import WelcomeScreen from '../screens/WelcomeScreen';
-import QuestionnaireScreen from '../screens/QuestionnaireScreen';
-import DashboardScreen from '../screens/DashboardScreen';
-import ChatScreen from '../screens/ChatScreen';
-import LetterScreen from '../screens/LetterScreen';
-import { HealthProfile, Trajectory } from '../types';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import EchoTab from '../screens/EchoTab';
+import MetricsTab from '../screens/MetricsTab';
+import FutureLabTab from '../screens/FutureLabTab';
+import ProfileTab from '../screens/ProfileTab';
+import { Text } from 'react-native';
 
-export type RootStackParamList = {
-  Welcome: undefined;
-  Questionnaire: undefined;
-  Dashboard: { profile: HealthProfile; trajectories: Trajectory[] };
-  Chat: { profile: HealthProfile; trajectories: Trajectory[] };
-  Letter: { profile: HealthProfile; trajectories: Trajectory[] };
+export type RootTabParamList = {
+  Echo: undefined;
+  Metrics: undefined;
+  FutureLab: undefined;
+  Profile: undefined;
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export const AppNavigator = () => {
   return (
-    <Stack.Navigator
-      initialRouteName="Welcome"
-      screenOptions={{
-        headerStyle: { backgroundColor: '#0F172A' },
-        headerTintColor: '#F8FAFC',
-        headerTitleStyle: { fontWeight: 'bold' },
-        contentStyle: { backgroundColor: '#0F172A' },
-        animation: 'fade',
-      }}
+    <Tab.Navigator
+      initialRouteName="Echo"
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#000000',
+          borderTopWidth: 1,
+          borderTopColor: '#1C1C1E',
+          paddingBottom: 5,
+          paddingTop: 5,
+          height: 60,
+        },
+        tabBarActiveTintColor: '#00FFFF',
+        tabBarInactiveTintColor: '#8E8E93',
+        tabBarIcon: ({ color }) => {
+          let iconName = '';
+          if (route.name === 'Echo') iconName = '✦';
+          else if (route.name === 'Metrics') iconName = '📊';
+          else if (route.name === 'FutureLab') iconName = '⚗️';
+          else if (route.name === 'Profile') iconName = '⚙️';
+          
+          return <Text style={{ color, fontSize: 20 }}>{iconName}</Text>;
+        },
+      })}
     >
-      <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Questionnaire" component={QuestionnaireScreen} options={{ title: 'Your Baseline' }} />
-      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Future Trajectory', headerBackVisible: false }} />
-      <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Digital Twin' }} />
-      <Stack.Screen name="Letter" component={LetterScreen} options={{ title: 'A Message from 2056' }} />
-    </Stack.Navigator>
+      <Tab.Screen name="Echo" component={EchoTab} options={{ title: 'Echo' }} />
+      <Tab.Screen name="Metrics" component={MetricsTab} options={{ title: 'Metrics' }} />
+      <Tab.Screen name="FutureLab" component={FutureLabTab} options={{ title: 'Future Lab' }} />
+      <Tab.Screen name="Profile" component={ProfileTab} options={{ title: 'Profile' }} />
+    </Tab.Navigator>
   );
 };
