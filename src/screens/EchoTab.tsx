@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Platform, Animated } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import Svg, { Path } from 'react-native-svg';
+
 import EchoStudioBottomSheet from './EchoStudioBottomSheet';
 import BackgroundGradient from '../components/BackgroundGradient';
 import { WebView } from 'react-native-webview';
@@ -141,29 +141,54 @@ const WebIframe = ({ html }: { html: string }) => {
 
 let hasLaunched = false;
 
+const MORNING_PROMPTS = [
+  "I drank 2 cups of water...",
+  "Did my morning run...",
+  "What if I sleep 8 hours?",
+  "Log my breakfast..."
+];
+const AFTERNOON_PROMPTS = [
+  "Had a heavy lunch...",
+  "Did 20 mins of yoga...",
+  "How will this affect my glucose?",
+  "Log afternoon coffee..."
+];
+const EVENING_PROMPTS = [
+  "I had 2 glasses of wine...",
+  "Read a book for 30 mins...",
+  "Simulate late night snack...",
+  "Log my dinner..."
+];
+
 export default function EchoTab() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [step, setStep] = useState(0); // 0: greeting, 1: bio age, 2: echo60 age
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  const hour = new Date().getHours();
+  let currentPrompts = MORNING_PROMPTS;
+  if (hour >= 12 && hour < 17) currentPrompts = AFTERNOON_PROMPTS;
+  else if (hour >= 17 || hour < 5) currentPrompts = EVENING_PROMPTS;
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex(prev => (prev + 1) % currentPrompts.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [currentPrompts.length]);
 
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
       const initialStep = hasLaunched ? 1 : 0;
       setStep(initialStep);
-      fadeAnim.setValue(0);
 
       const runSequence = async () => {
-        const fadeIn = () => new Promise(r => Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start(r));
-        const fadeOut = () => new Promise(r => Animated.timing(fadeAnim, { toValue: 0, duration: 800, useNativeDriver: true }).start(r));
         const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
         if (initialStep === 0) {
           // Greeting
-          await fadeIn();
           await wait(1500);
-          if (!isMounted) return;
-          await fadeOut();
           if (!isMounted) return;
           hasLaunched = true;
           setStep(1);
@@ -172,24 +197,17 @@ export default function EchoTab() {
         if (!isMounted) return;
 
         // Bio Age
-        await fadeIn();
         await wait(2000);
         if (!isMounted) return;
-        await fadeOut();
-        if (!isMounted) return;
         setStep(2);
-
-        // Echo60 Age
-        await fadeIn();
       };
 
       runSequence();
 
       return () => {
         isMounted = false;
-        fadeAnim.stopAnimation();
       };
-    }, [fadeAnim])
+    }, [])
   );
 
   return (
@@ -209,7 +227,7 @@ export default function EchoTab() {
             
             {/* Top Sequence Area */}
             <View className="h-[220px] w-full items-center justify-center">
-              <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
+              <View className="items-center w-full">
                 
                 {step === 0 && (
                   <Text className="text-[#00FFFF] text-3xl font-light tracking-wide text-center">Hello Sixel,</Text>
@@ -229,10 +247,7 @@ export default function EchoTab() {
                     
                     {/* Trajectory Text */}
                     <View className="flex-row items-center mt-6">
-                      <Svg width={24} height={12} viewBox="0 0 24 12" className="mr-2">
-                        <Path d="M2 10 Q 12 10, 22 2" fill="none" stroke="#00FFFF" strokeWidth="2" strokeLinecap="round" />
-                        <Path d="M16 2 L 22 2 L 22 8" fill="none" stroke="#00FFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </Svg>
+                      <Text className="text-[#00FFFF] text-xl mr-2 font-bold">↗</Text>
                       <Text className="text-[#A0B0BA] text-sm font-light tracking-wide">
                         Trajectory: <Text className="text-[#00FFFF] font-medium">Improving</Text> <Text className="text-white/60 text-xs">(+1.2 Vitality)</Text>
                       </Text>
@@ -240,7 +255,7 @@ export default function EchoTab() {
                   </View>
                 )}
 
-              </Animated.View>
+              </View>
             </View>
 
             {/* The Animated Lava Orb */}
@@ -259,12 +274,18 @@ export default function EchoTab() {
               )}
             </View>
 
-            {/* Action Pill Button */}
+            {/* Faux Input Box */}
             <TouchableOpacity 
-              className="bg-white/5 py-4 px-8 rounded-full border border-white/10 w-[85%] items-center shadow-lg mt-8"
+              className="bg-surfaceHighlight py-4 px-6 rounded-full border border-white/10 w-[90%] shadow-lg mt-8 flex-row items-center justify-between"
+              activeOpacity={0.8}
               onPress={() => setIsChatOpen(true)}
             >
-              <Text className="text-white font-medium text-sm tracking-wide">✨ See what +1 hour of sleep does</Text>
+              <Text className="text-[#A0B0BA] font-light text-[15px] flex-1">
+                {currentPrompts[placeholderIndex]}
+              </Text>
+              <View className="ml-3 w-10 h-10 bg-[#E0E7FF]/20 rounded-full items-center justify-center">
+                <Text className="text-white font-bold text-sm">↑</Text>
+              </View>
             </TouchableOpacity>
 
           </ScrollView>

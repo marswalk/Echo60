@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 
 type Props = {
@@ -6,8 +6,46 @@ type Props = {
   onClose: () => void;
 };
 
+const MORNING_SUGGESTIONS = [
+  "Log 8 hours sleep",
+  "What if I skip breakfast?",
+  "Log 30m morning walk",
+  "Explain glucose spike",
+  "Log 2 cups water"
+];
+
+const AFTERNOON_SUGGESTIONS = [
+  "Log salad for lunch",
+  "Simulate afternoon coffee",
+  "Why am I tired now?",
+  "Log 20m stretching",
+  "Explain cortisol dip"
+];
+
+const EVENING_SUGGESTIONS = [
+  "Log 1 glass of wine",
+  "Simulate late night snack",
+  "Log 1hr reading",
+  "What if I sleep at 2 AM?",
+  "Log dinner: steak"
+];
+
 export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
   const [inputText, setInputText] = useState('');
+
+  const hour = new Date().getHours();
+  let baseSuggestions = MORNING_SUGGESTIONS;
+  if (hour >= 12 && hour < 17) baseSuggestions = AFTERNOON_SUGGESTIONS;
+  else if (hour >= 17 || hour < 5) baseSuggestions = EVENING_SUGGESTIONS;
+
+  // Duplicate to create infinite scrolling illusion
+  const suggestions = [...baseSuggestions, ...baseSuggestions, ...baseSuggestions, ...baseSuggestions, ...baseSuggestions];
+
+  useEffect(() => {
+    if (visible) {
+      setInputText('');
+    }
+  }, [visible]);
 
   return (
     <Modal
@@ -30,39 +68,52 @@ export default function EchoStudioBottomSheet({ visible, onClose }: Props) {
 
           {/* Chat Content */}
           <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 20 }}>
-            
-            {/* User Message */}
-            <View className="self-end max-w-[80%] mb-4 mt-4">
-              <View className="bg-surfaceHighlight p-4 rounded-3xl rounded-tr-sm">
-                <Text className="text-text font-light text-[15px]">What happens if I start sleeping 8 hours a night?</Text>
-              </View>
-            </View>
-
-            {/* AI Message */}
-            <View className="self-start max-w-[85%] mb-4">
-              <View className="bg-transparent border border-white/10 p-5 rounded-3xl rounded-tl-sm">
-                <Text className="text-text font-light text-[15px] mb-4 leading-relaxed">
-                  If you sleep 8 hours consistently, your cardiovascular risk drops by 14% over the next decade. Your cognitive decline trajectory also flattens significantly.
-                </Text>
-                
-                {/* Embed Action Pill */}
-                <TouchableOpacity className="bg-white/10 border border-white/20 py-2 px-4 rounded-full self-start flex-row items-center">
-                  <Text className="text-text font-medium mr-2">Apply to Simulation</Text>
-                  <Text className="text-text font-bold">→</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
+            {/* Blank state for now */}
           </ScrollView>
 
+          {/* Suggestions Area */}
+          <View className="pb-3 border-t border-white/5 pt-3">
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20 }}
+            >
+              <View className="flex-col gap-2">
+                <View className="flex-row gap-2">
+                  {suggestions.slice(0, Math.ceil(suggestions.length / 2)).map((text, i) => (
+                    <TouchableOpacity 
+                      key={i} 
+                      className="bg-white/5 border border-white/10 px-4 py-2 rounded-full"
+                      onPress={() => setInputText(text)}
+                    >
+                      <Text className="text-[#A0B0BA] text-sm">{text}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View className="flex-row gap-2 ml-6">
+                  {suggestions.slice(Math.ceil(suggestions.length / 2)).map((text, i) => (
+                    <TouchableOpacity 
+                      key={i} 
+                      className="bg-white/5 border border-white/10 px-4 py-2 rounded-full"
+                      onPress={() => setInputText(text)}
+                    >
+                      <Text className="text-[#A0B0BA] text-sm">{text}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+
           {/* Input Area */}
-          <View className="p-5 border-t border-white/5 bg-transparent flex-row items-center">
+          <View className="p-5 pt-2 bg-transparent flex-row items-center">
             <TextInput 
               className="flex-1 bg-surfaceHighlight text-text px-5 py-4 rounded-full border border-white/10"
               placeholder="Ask your digital twin..."
               placeholderTextColor="#A0B0BA"
               value={inputText}
               onChangeText={setInputText}
+              autoFocus={true}
             />
             <TouchableOpacity className="ml-3 w-12 h-12 bg-[#E0E7FF] rounded-full items-center justify-center">
               <Text className="text-[#0A1118] font-bold text-lg">↑</Text>
