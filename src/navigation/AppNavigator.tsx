@@ -4,7 +4,8 @@ import EchoTab from '../screens/EchoTab';
 import MetricsTab from '../screens/MetricsTab';
 import FutureLabTab from '../screens/FutureLabTab';
 import ProfileTab from '../screens/ProfileTab';
-import { Text } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export type RootTabParamList = {
   Echo: undefined;
@@ -17,35 +18,55 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export const AppNavigator = () => {
   return (
-    <Tab.Navigator
-      initialRouteName="Echo"
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#000000',
-          borderTopWidth: 1,
-          borderTopColor: '#1C1C1E',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
-        },
-        tabBarActiveTintColor: '#00FFFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarIcon: ({ color }) => {
-          let iconName = '';
-          if (route.name === 'Echo') iconName = '✦';
-          else if (route.name === 'Metrics') iconName = '📊';
-          else if (route.name === 'FutureLab') iconName = '⚗️';
-          else if (route.name === 'Profile') iconName = '⚙️';
-          
-          return <Text style={{ color, fontSize: 20 }}>{iconName}</Text>;
-        },
-      })}
-    >
-      <Tab.Screen name="Echo" component={EchoTab} options={{ title: 'Echo' }} />
-      <Tab.Screen name="Metrics" component={MetricsTab} options={{ title: 'Metrics' }} />
-      <Tab.Screen name="FutureLab" component={FutureLabTab} options={{ title: 'Future Lab' }} />
-      <Tab.Screen name="Profile" component={ProfileTab} options={{ title: 'Profile' }} />
-    </Tab.Navigator>
+    <View style={{ flex: 1, backgroundColor: '#0A1118' }}>
+      <Tab.Navigator
+        initialRouteName="Echo"
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarStyle: {
+            position: 'absolute',
+            bottom: 25,
+            left: 20,
+            right: 20,
+            elevation: 0,
+            backgroundColor: 'rgba(30, 30, 35, 0.85)',
+            borderRadius: 30,
+            height: 70,
+            borderTopWidth: 0,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.5,
+            shadowRadius: 15,
+            paddingBottom: 0,
+          },
+          tabBarItemStyle: {
+            padding: 5,
+          },
+          tabBarActiveTintColor: '#FFFFFF',
+          tabBarInactiveTintColor: '#A0B0BA',
+          tabBarShowLabel: false,
+          tabBarIcon: ({ focused, color }) => {
+            let iconName = '';
+            let label = '';
+            if (route.name === 'Echo') { iconName = '✦'; label = 'Today'; }
+            else if (route.name === 'Metrics') { iconName = '⚲'; label = 'Metrics'; }
+            else if (route.name === 'FutureLab') { iconName = '⚗️'; label = 'Future'; }
+            else if (route.name === 'Profile') { iconName = '⚙'; label = 'Profile'; }
+            
+            return (
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color, fontSize: 24, marginBottom: 2 }}>{iconName}</Text>
+                <Text style={{ color, fontSize: 10, fontWeight: focused ? '600' : '400', letterSpacing: 0.5 }}>{label}</Text>
+              </View>
+            );
+          },
+        })}
+      >
+        <Tab.Screen name="Echo" component={EchoTab} />
+        <Tab.Screen name="Metrics" component={MetricsTab} />
+        <Tab.Screen name="FutureLab" component={FutureLabTab} />
+        <Tab.Screen name="Profile" component={ProfileTab} />
+      </Tab.Navigator>
+    </View>
   );
 };

@@ -5,11 +5,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#000000',
-        surface: '#1C1C1E',
-        primary: '#00FFFF',
+        backgroundStart: '#1E4B5E',
+        backgroundEnd: '#0A1118',
+        surface: 'rgba(20, 20, 20, 0.4)',
+        surfaceHighlight: 'rgba(255, 255, 255, 0.1)',
+        primary: '#E0E7FF',
+        accent: '#D4AF37', // soft gold
         text: '#FFFFFF',
-        textMuted: '#8E8E93'
+        textMuted: '#A0B0BA'
       }
     },
   },
