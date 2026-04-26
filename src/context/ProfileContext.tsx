@@ -47,16 +47,12 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function loadData() {
       try {
-        let storedProfiles = await StorageService.getProfiles();
-        // For demo purposes: always reset onboarding and clear any generated "me" profile on launch
-        storedProfiles = storedProfiles.filter(p => p.id !== 'me');
-        if (storedProfiles.length === 0) {
-          storedProfiles = migrateMockProfiles();
-        }
-        await StorageService.saveProfiles(storedProfiles);
-        setProfiles(storedProfiles);
+        // Always reset to fresh mock data on every launch (demo mode)
+        const freshProfiles = migrateMockProfiles();
+        await StorageService.saveProfiles(freshProfiles);
+        setProfiles(freshProfiles);
 
-        let activeProfile = storedProfiles[0];
+        const activeProfile = freshProfiles[0];
         await StorageService.setActiveProfileId(activeProfile.id);
         setProfile(activeProfile);
 
